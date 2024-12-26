@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import './App.css';
 
 function App() {
@@ -58,6 +59,60 @@ function App() {
   }
   }, []);
 
+  const handleFileUpload = (event) => {
+    console.log("handleFileUpload start");
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+
+      const parsedLocations = json.map(row => ({
+        longitude: parseFloat(row['longitude']),
+        latitude: parseFloat(row['latitude']),
+        orderCount: parseInt(row['order'])
+      }));
+
+      console.log('parsedLocations:', parsedLocations);
+      displayLocations(parsedLocations);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  const displayLocations = (locations) => {
+    if (!mapInstance.current) return;
+
+    // 清除之前的圆圈
+    mapInstance.current.clearMap();
+
+    locations.forEach(location => {
+      const circle = new window.AMap.Circle({
+        center: new window.AMap.LngLat(location.longitude, location.latitude),
+        radius: Math.sqrt(location.orderCount) * 100, // 根据订单量调整圆圈大小
+        fillColor: '#FF0000', // 填充颜色：红色
+        strokeColor: '#8B0000', // 边框颜色：深红色
+        strokeWeight: 1,
+        fillOpacity: 0.4,
+      });
+
+      circle.setMap(mapInstance.current);
+    });
+
+    // 调整地图视图以包含所有点
+    // if (locations.length > 0) {
+    //   const bounds = locations.reduce((bounds, location) => {
+    //     return bounds.extend(new window.AMap.LngLat(location.longitude, location.latitude));
+    //   }, new window.AMap.Bounds());
+
+    //   mapInstance.current.setBounds(bounds);
+    // }
+  };
+
   const handleLocate = () => {
     if (!longitude || !latitude) {
       alert('请输入经度和纬度');
@@ -108,11 +163,16 @@ function App() {
           onChange={(e) => setLatitude(e.target.value)}
         />
         <button onClick={handleLocate}>定位</button>
-      </div>
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            onChange={handleFileUpload}
+          />
+    </div>
         <div className="map-container">
           <div ref={mapRef} className="map"></div>
-    </div>
       </div>
+    </div>
     </div>
   );
 }
