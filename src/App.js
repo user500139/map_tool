@@ -74,7 +74,8 @@ function App() {
       const parsedLocations = json.map(row => ({
         longitude: parseFloat(row['longitude']),
         latitude: parseFloat(row['latitude']),
-        orderCount: parseInt(row['order'])
+        orderCount: parseInt(row['order']),
+        name: row['name'] // 添加name字段
       }));
 
       console.log('parsedLocations:', parsedLocations);
@@ -101,6 +102,22 @@ function App() {
       });
 
       circle.setMap(mapInstance.current);
+
+      // 添加文本标记
+      const text = new window.AMap.Text({
+        text: location.name,
+        position: new window.AMap.LngLat(location.longitude, location.latitude),
+        style: {
+          'background-color': 'transparent',
+          'text-align': 'center',
+          'font-size': '12px',
+          'font-weight': 'bold',
+          'color': '#000000',
+        },
+        offset: new window.AMap.Pixel(0, 0)
+      });
+
+      text.setMap(mapInstance.current);
     });
 
     // 调整地图视图以包含所有点
